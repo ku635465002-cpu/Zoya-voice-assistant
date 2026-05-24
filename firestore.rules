@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Auth helpers
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() { return request.auth.token.email == 'ku635465002@gmail.com'; }
+    
+    // Schema helpers
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    function isValidAction(data) {
+      return data.keys().hasAll(['name', 'argSummary', 'timestamp']) &&
+             data.keys().size() >= 3 &&
+             data.name is string && data.name.size() <= 100 &&
+             data.argSummary is string && data.argSummary.size() <= 600 &&
+             data.timestamp is number;
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    match /users/{userId}/actions/{actionId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if isSignedIn() && request.auth.uid == userId &&
+                       isValidId(actionId) && isValidAction(incoming());
+      // Actions cannot be updated or deleted except by admin
+      allow update, delete: if isSignedIn() && isAdmin();
+    }
+    
+    // Allow collection group query for admin
+    match /{path=**}/actions/{actionId} {
+      allow read: if isSignedIn() && isAdmin();
+    }
+  }
+}

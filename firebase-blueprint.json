@@ -1,0 +1,30 @@
+{
+  "entities": {
+    "action": {
+      "title": "Action",
+      "description": "An action performed by the voice assistant on the client.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the action (e.g. openApp)."
+        },
+        "argSummary": {
+          "type": "string",
+          "description": "Arguments/details about the action."
+        },
+        "timestamp": {
+          "type": "number",
+          "description": "Unix timestamp of when the action occurred."
+        }
+      },
+      "required": ["name", "argSummary", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/actions/{actionId}": {
+      "schema": { "$ref": "#/entities/action" },
+      "description": "Actions triggered for this user."
+    }
+  }
+}
